@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mock-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mock
+      POSTGRES_PASSWORD: mock
+      POSTGRES_DB: mock_interview
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./apps/server/src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
+  minio:
+    image: minio/minio:latest
+    container_name: mock-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: mock
+      MINIO_ROOT_PASSWORD: mockmockmock
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  miniodata:

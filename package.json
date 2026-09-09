@@ -1,0 +1,19 @@
+{
+  "name": "mock-interview-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "模拟面试平台 - Web 应用，AI 面试官 + 实时语音 + 评分报告 + 简历优化",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:server": "npm run dev --workspace apps/server",
+    "dev:web": "npm run dev --workspace apps/web",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

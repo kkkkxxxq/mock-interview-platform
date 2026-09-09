@@ -1,0 +1,22 @@
+# ---- deps ----
+node_modules/
+
+# ---- env ----
+.env
+.env.local
+
+# ---- build ----
+dist/
+build/
+*.tsbuildinfo
+
+# ---- logs ----
+*.log
+
+# ---- OS / editor ----
+.DS_Store
+.idea/
+.vscode/
+
+# ---- local storage (dev dev-server only) ----
+data/
