@@ -283,6 +283,20 @@ export default function SetupPage() {
           <p style={{ fontSize: 11, letterSpacing: ".18em", color: ACCENT, fontWeight: 600, fontVariantNumeric: "tabular-nums", margin: 0 }}>{eyebrow}</p>
           <h1 style={{ margin: "10px 0 8px", fontSize: 32, fontWeight: 300, letterSpacing: ".01em", color: "#f6f8fb" }}>{title}</h1>
           <p style={{ margin: 0, fontSize: 14, color: "#8b93a1" }}>{sub}</p>
+          <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+            {[["1", "基础配置", 1], ["2", "题量与简历", 2]].map(([n, label, s]) => {
+              const active = step === (s as 1 | 2);
+              const done = (step as number) > (s as number);
+              return (
+                <div key={n} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 16px", borderRadius: 99, border: `1px solid ${active ? ACCENT : done ? "rgba(52,211,153,.55)" : "#3a4150"}`, background: active ? "rgba(201,162,90,.08)" : "transparent", color: active ? ACCENT_SOFT : done ? "#34d399" : "#8b93a1", fontSize: 13, fontWeight: 600 }}>
+                  <span style={{ width: 18, height: 18, borderRadius: 99, border: "1px solid currentColor", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>
+                    {done ? "✓" : n}
+                  </span>
+                  {label}
+                </div>
+              );
+            })}
+          </div>
         </div>
         {children}
       </main>

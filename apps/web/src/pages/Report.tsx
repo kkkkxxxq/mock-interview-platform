@@ -79,6 +79,7 @@ export default function ReportPage() {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [weakOnly, setWeakOnly] = useState(false);
 
   const toggleQ = (i: number) => {
     setExpanded((prev) => {
@@ -132,6 +133,11 @@ export default function ReportPage() {
 
   const totalScore = data.scores.reduce((s, x) => s + x.score, 0);
   const totalMax = data.scores.reduce((s, x) => s + x.maxScore, 0) || 1;
+  const totalPct = data.scores.length ? (totalScore / totalMax) * 100 : 0;
+  const grade = data.scores.length ? (totalPct >= 90 ? "A" : totalPct >= 80 ? "B" : totalPct >= 60 ? "C" : "D") : null;
+  const gradeColor = grade === "A" ? "#34d399" : grade === "B" ? ACCENT_SOFT : grade === "C" ? "#fbbf24" : "#f87171";
+  const RING_R = 34;
+  const RING_C = 2 * Math.PI * RING_R;
 
   const diag = (() => {
     try {
@@ -144,6 +150,23 @@ export default function ReportPage() {
   })();
 
   const roleLabel = ROLE_LABELS[data.interview.role as keyof typeof ROLE_LABELS] ?? data.interview.role;
+
+  const isWeak = (q: QuestionEntry) => typeof q.quality === "number" && q.quality <= 2;
+  const weakQuestions = data.questions.filter(isWeak);
+  const visibleQuestions = weakOnly ? weakQuestions : data.questions;
+  const qChip = (active: boolean): React.CSSProperties => ({
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "5px 13px",
+    borderRadius: 99,
+    border: `1px solid ${active ? ACCENT : LINE}`,
+    color: active ? ACCENT_SOFT : MUTED,
+    background: active ? "rgba(201,162,90,.08)" : "transparent",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    cursor: "pointer",
+  });
 
   const exportReportFile = () => {
     const date = new Date().toISOString().slice(0, 10);
@@ -259,9 +282,41 @@ export default function ReportPage() {
           {/* 顶部：横向评分总览（紧凑） */}
           <div style={{ ...PANEL, flexShrink: 0, padding: "14px 20px" }}>
             <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-              <div style={{ textAlign: "center", flexShrink: 0, borderRight: `1px solid ${LINE}`, paddingRight: 24 }}>
-                <div style={{ fontSize: 44, fontWeight: 800, color: ACCENT_SOFT, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{data.scores.length ? totalScore : "—"}</div>
-                <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>综合得分 / {totalMax}</div>
+              <div style={{ display: "flex", gap: 18, alignItems: "center", flexShrink: 0, borderRight: `1px solid ${LINE}`, paddingRight: 24 }}>
+                <div style={{ position: "relative", width: 92, height: 92, flexShrink: 0 }}>
+                  <svg width={92} height={92}>
+                    <circle cx={46} cy={46} r={RING_R} stroke="rgba(255,255,255,.08)" strokeWidth={6} fill="none" />
+                    <circle
+                      cx={46}
+                      cy={46}
+                      r={RING_R}
+                      stroke={`url(#ringGrad)`}
+                      strokeWidth={6}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={RING_C}
+                      strokeDashoffset={RING_C * (1 - totalPct / 100)}
+                      transform="rotate(-90 46 46)"
+                      style={{ transition: "stroke-dashoffset .6s ease" }}
+                    />
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor={ACCENT} />
+                        <stop offset="100%" stopColor={ACCENT_SOFT} />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 24, fontWeight: 800, color: ACCENT_SOFT, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{data.scores.length ? totalScore : "—"}</span>
+                    <span style={{ fontSize: 10, color: MUTED, marginTop: 3 }}>/ {totalMax}</span>
+                  </div>
+                </div>
+                {grade && (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                    <span style={{ width: 46, height: 46, borderRadius: 12, border: `1px solid ${gradeColor}`, color: gradeColor, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, background: `${gradeColor}14` }}>{grade}</span>
+                    <span style={{ fontSize: 11, color: MUTED }}>等级</span>
+                  </div>
+                )}
               </div>
               <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "9px 26px" }}>
                 {data.scores.length === 0 ? (
@@ -290,9 +345,18 @@ export default function ReportPage() {
             <div style={{ flex: 3, minWidth: 0, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, paddingRight: 4 }}>
               <div style={PANEL}>
                 <div style={{ ...sectionTitle, padding: "22px 24px 0" }}>逐题记录与点评</div>
+                <div style={{ display: "flex", gap: 8, padding: "14px 24px 0" }}>
+                  <button onClick={() => setWeakOnly(false)} style={qChip(!weakOnly)}>全部题目 <span style={{ color: MUTED }}>{data.questions.length}</span></button>
+                  <button onClick={() => setWeakOnly(true)} style={qChip(weakOnly)}>仅看弱项 <span style={{ color: weakQuestions.length ? "#f87171" : MUTED }}>{weakQuestions.length}</span></button>
+                </div>
                 <div style={{ padding: "6px 24px 18px" }}>
-                  {data.questions.map((q) => (
-                    <div key={q.questionIndex} style={{ padding: "14px 0", borderBottom: `1px solid ${LINE}` }}>
+                  {visibleQuestions.length === 0 ? (
+                    <div style={{ color: MUTED, fontSize: 15, padding: "18px 0" }}>{weakOnly ? "没有弱项题目。" : "暂无题目记录。"}</div>
+                  ) : (
+                  visibleQuestions.map((q) => {
+                    const weak = isWeak(q);
+                    return (
+                    <div key={q.questionIndex} style={{ padding: "14px 0 14px 14px", borderBottom: `1px solid ${LINE}`, borderLeft: weak ? "3px solid rgba(248,113,113,.6)" : "3px solid transparent" }}>
                       <button
                         onClick={() => toggleQ(q.questionIndex)}
                         style={{ width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", padding: 0 }}
@@ -301,6 +365,9 @@ export default function ReportPage() {
                           Q{q.questionIndex + 1}. {q.question}
                         </span>
                         <span style={{ color: MUTED, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
+                          {weak && (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#f87171", border: `1px solid rgba(248,113,113,.55)`, borderRadius: 99, padding: "2px 10px" }}>弱项</span>
+                          )}
                           {typeof q.quality === "number" && (
                             <span style={{ fontSize: 13, fontWeight: 700, color: QUALITY_TAG[q.quality]?.color ?? MUTED, border: `1px solid ${QUALITY_TAG[q.quality]?.color ?? "#3a4150"}`, borderRadius: 99, padding: "2px 10px" }}>
                               作答评定 {q.quality}/4 · {QUALITY_TAG[q.quality]?.label ?? ""}
@@ -330,7 +397,9 @@ export default function ReportPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })
+                  )}
                 </div>
               </div>
 

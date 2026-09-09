@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./lib/auth";
 import LoginPage from "./pages/Login";
+import LandingPage from "./pages/Landing";
 import SetupPage from "./pages/Setup";
 import InterviewRoom from "./pages/InterviewRoom";
 import ReportPage from "./pages/Report";
@@ -24,7 +25,8 @@ export default function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<SetupPage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/setup" element={<SetupPage />} />
         <Route path="/interview/:id" element={<InterviewRoom />} />
         <Route path="/report/:id" element={<ReportPage />} />
         <Route path="/history" element={<HistoryPage />} />

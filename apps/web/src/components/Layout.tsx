@@ -15,7 +15,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Link to="/" style={{ color: "#fff", fontSize: 20, fontWeight: 800, letterSpacing: ".02em", textDecoration: "none" }}>
               模拟面试平台
             </Link>
-            <Link to="/" style={{ color: "#cbd5e1", fontSize: 16, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Link to="/setup" style={{ color: "#cbd5e1", fontSize: 16, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
               <SlidersIcon size={16} /> 配置面试
             </Link>
             <Link to="/history" style={{ color: "#cbd5e1", fontSize: 16, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>

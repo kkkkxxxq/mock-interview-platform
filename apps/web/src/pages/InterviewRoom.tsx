@@ -720,6 +720,13 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
     setDebugDone(true);
   };
 
+  const replayQuestion = () => {
+    if (!currentQuestion) return;
+    stopRecognition();
+    setAnsweringSync(false);
+    speakLocal(currentQuestion, "question");
+  };
+
   const interrupt = () => {
     if ("speechSynthesis" in window) speechSynthesis.cancel();
     aiSpeakingRef.current = false;
@@ -946,11 +953,22 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${devices.mic ? "rgba(52,211,153,.5)" : "#3a4150"}`, color: devices.mic ? "#34d399" : MUTED, borderRadius: 99, padding: "5px 12px", fontWeight: 600 }}>
                 <MicIcon size={14} /> {devices.mic ? "麦克风已开" : "麦克风未开"}
               </span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${devices.camera ? "rgba(52,211,153,.5)" : "#3a4150"}`, color: devices.camera ? "#34d399" : MUTED, borderRadius: 99, padding: "5px 12px", fontWeight: 600 }}>
+<span style={{ display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${devices.camera ? "rgba(52,211,153,.5)" : "#3a4150"}`, color: devices.camera ? "#34d399" : MUTED, borderRadius: 99, padding: "5px 12px", fontWeight: 600 }}>
                 <VideoIcon size={14} /> {devices.camera ? "摄像头已开" : "摄像头未开"}
               </span>
             </div>
           </div>
+
+          {!unlimited && questionCount > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${LINE}` }}>
+              <div style={{ flex: 1, height: 4, borderRadius: 99, background: "rgba(255,255,255,.07)", overflow: "hidden" }}>
+                <div style={{ width: `${Math.min(100, Math.round((qIndex / questionCount) * 100))}%`, height: "100%", background: `linear-gradient(90deg, ${ACCENT}, ${ACCENT_SOFT})`, borderRadius: 99, transition: "width .4s ease" }} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".04em", color: MUTED, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                第 {qIndex} / {questionCount} 题 · {Math.min(100, Math.round((qIndex / questionCount) * 100))}%
+              </span>
+            </div>
+          )}
 
       {error ? (
         <div style={{ ...PANEL, padding: 22, color: "#fca5a5", fontSize: 18 }}>{error}</div>
@@ -1025,15 +1043,24 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
                   <VolumeIcon size={15} /> 面试官音量
                 </label>
                 <input type="range" min={0} max={1} step={0.05} value={aiVolume} onChange={(e) => setAiVolume(Number(e.target.value))} style={{ width: "100%", height: 4, accentColor: ACCENT }} />
-                <div style={{ fontSize: 13, color: MUTED }}>{Math.round(aiVolume * 100)}%</div>
+<div style={{ fontSize: 13, color: MUTED }}>{Math.round(aiVolume * 100)}%</div>
               </div>
+              <button onClick={replayQuestion} disabled={!currentQuestion || answering} style={{ marginTop: 12, fontSize: 13, fontWeight: 600, width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, border: `1px solid ${currentQuestion ? "rgba(201,162,90,.45)" : LINE}`, color: currentQuestion ? ACCENT_SOFT : MUTED, background: currentQuestion ? "rgba(201,162,90,.06)" : "transparent", borderRadius: 8, padding: "9px 12px", cursor: currentQuestion ? "pointer" : "not-allowed" }}>
+                <VolumeIcon size={14} /> 重听当前题
+              </button>
             </div>
 
             <div style={{ ...PANEL, flex: 1, minHeight: 0, overflowY: "auto", padding: 18, textAlign: "center", borderColor: userActive ? "#34d399" : "#3a4150" }}>
               <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 4, color: "#f6f8fb" }}>你 · 候选人</div>
-              <div style={{ width: "100%", height: 180, borderRadius: 6, overflow: "hidden", background: "#0a0c10", border: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+<div style={{ position: "relative", width: "100%", height: 180, borderRadius: 6, overflow: "hidden", background: "#0a0c10", border: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
                 <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
                 {!devices.camera && <span style={{ color: MUTED, fontSize: 15 }}>摄像头未开启（可选）</span>}
+                {answering && (
+                  <span style={{ position: "absolute", top: 10, left: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(220,38,38,.94)", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".16em", borderRadius: 99, padding: "4px 11px" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "#fff", display: "inline-block", animation: "livePulse 1s ease-in-out infinite" }} />
+                    LIVE
+                  </span>
+                )}
               </div>
 
               <div style={{ textAlign: "left" }}>
