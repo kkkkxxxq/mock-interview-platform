@@ -74,3 +74,5 @@ npm run dev -w apps/web        # 或 npx vite --host 127.0.0.1 -C apps/web
 | D3 | 使用说明 | `docs/使用说明.md` |
 | D4 | 过程材料 | `docs/体验检查标准与过程材料.md`（设计演进 / 问题修复 / 阶段演示） |
 | D5 | 答辩材料 | `docs/方案设计说明.md`（含答辩要点） |
+
+项目开源仓库：https://github.com/kkkkxxxq/mock-interview-platform
