@@ -91,9 +91,11 @@ export default function InterviewRoom() {
   const [readText, setReadText] = useState("");
   const [readIndex, setReadIndex] = useState(0);
   const [readKind, setReadKind] = useState<"question" | "feedback">("feedback");
-  const [qIndex, setQIndex] = useState(1);
+const [qIndex, setQIndex] = useState(1);
   const [questionCount, setQuestionCount] = useState(5);
   const [unlimited, setUnlimited] = useState(false);
+  const [textMode, setTextMode] = useState(false);
+  const [textDraft, setTextDraft] = useState("");
 
   const pushLog = (s: string) => setLog((prev) => [...prev, s]);
   const wsUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/interview?token=${getToken()}`;
@@ -289,7 +291,7 @@ export default function InterviewRoom() {
   const openRecognition = () => {
     const SR = typeof window !== "undefined" && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
     if (!SR) {
-      setBanner("当前浏览器不支持语音识别（SpeechRecognition），本次面试需使用语音作答，请更换 Chrome / Edge 后再试。");
+      setBanner("当前浏览器不支持语音识别（SpeechRecognition），可切换文字作答继续面试，或更换 Chrome / Edge 使用语音。");
       setAnsweringSync(false);
       return;
     }
@@ -738,12 +740,39 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
     setTranscript("");
   };
 
-  const endInterview = () => {
+const endInterview = () => {
     stopRecognition();
     pushLog("你：结束对话");
     wsRef.current?.send(JSON.stringify({ type: "end" }));
     setPhase("processing");
     setStatus("正在结束并评分…");
+  };
+
+  const submitTextAnswer = () => {
+    if (aiSpeakingRef.current || phaseRef.current !== "listening") return;
+    const t = textDraft.trim();
+    if (!t) {
+      setStatus("请输入内容后再提交");
+      return;
+    }
+    setTextDraft("");
+    setTranscript(t);
+    setPhase("processing");
+    setStatus("思考中…");
+    pushLog(`你：${t}`);
+    setTranscriptLog((prev) => [...prev, { speaker: "user", content: t }]);
+    wsRef.current?.send(JSON.stringify({ type: "answer", text: t }));
+  };
+
+  const toggleTextMode = () => {
+    stopRecognition();
+    setAnsweringSync(false);
+    setTextMode((v) => {
+      if (!v && phaseRef.current !== "listening") {
+        setStatus("请等待面试官说完再作答");
+      }
+      return !v;
+    });
   };
 
   const interviewerActive = phase === "speaking";
@@ -898,7 +927,7 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
               </button>
             </div>
             {!debugReady && (
-              <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: MUTED }}>设备未全部通过检测，仍可直接进入面试（可使用「插话 / 结束作答」，语音功能可能受限）</div>
+              <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: MUTED }}>设备未全部通过检测，仍可直接进入面试；进入后语音受限时可点「文字作答」继续训练，流程不中断</div>
             )}
           </div>
 
@@ -1017,11 +1046,11 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
 
             <div style={{ paddingBottom: 14, borderBottom: `1px solid ${LINE}` }}>
               <div style={sectionTitle}>你的实时转写</div>
-              <div style={{ fontSize: 19, lineHeight: 1.9, minHeight: 26, color: "#e8eaf0" }}>
-                {answering ? transcript || "（正在聆听…请开始作答）" : "点击「开始作答」后说话，说完点击「结束作答」"}
+<div style={{ fontSize: 19, lineHeight: 1.9, minHeight: 26, color: "#e8eaf0" }}>
+                {answering ? transcript || "（正在聆听…请开始作答）" : textMode ? "等待面试官说完后，在下方输入框提交你的回答" : "点击「开始作答」后说话，说完点击「结束作答」"}
               </div>
               {!answering && (
-                <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>点「开始作答」后说话；说完点「结束作答」，或停顿约数秒自动提交</div>
+                <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>语音作答：点「开始作答」后说话，说完点「结束作答」或停顿约数秒自动提交；语音不可用时点右下「文字作答」</div>
               )}
             </div>
             </div>
@@ -1094,13 +1123,33 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
         </div>
       )}
 
+{textMode && (
+        <div style={{ display: "flex", gap: 12, marginTop: 18, alignItems: "stretch" }}>
+          <textarea
+            value={textDraft}
+            onChange={(e) => setTextDraft(e.target.value)}
+            rows={3}
+            placeholder={phase === "listening" ? "在此输入你的回答，面试官会根据内容点评与追问…" : "请等待面试官说完后作答…"}
+            disabled={phase !== "listening"}
+            style={{ flex: 1, resize: "vertical", background: "rgba(255,255,255,.03)", border: `1px solid ${LINE}`, borderRadius: 8, color: "#e8eaf0", padding: "12px 14px", fontSize: 16, fontFamily: "inherit", lineHeight: 1.6, outline: "none" }}
+          />
+          <button onClick={submitTextAnswer} disabled={phase !== "listening"} className="btn-gold" style={{ flexShrink: 0, padding: "0 26px", fontSize: 16, fontWeight: 700, opacity: phase === "listening" ? 1 : 0.5, cursor: phase === "listening" ? "pointer" : "not-allowed" }}>
+            提交文字作答
+          </button>
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 16, marginTop: 24, paddingBottom: 4 }}>
         {phase === "speaking" && (
           <button onClick={interrupt} style={{ padding: "16px 20px", fontSize: 16, border: `1px solid ${LINE}`, background: "transparent", color: "#cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <StopIcon size={16} /> 插话
           </button>
         )}
-        {answering ? (
+        {textMode ? (
+          <button onClick={toggleTextMode} style={{ padding: "16px 20px", fontSize: 16, border: `1px solid ${LINE}`, background: "transparent", color: "#cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <MicIcon size={16} /> 切换到语音作答
+          </button>
+        ) : answering ? (
           <button onClick={() => finishAnswer()} className="btn-gold" style={{ flex: 1, padding: 17, fontSize: 18, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <StopIcon size={16} /> 结束作答（回答完毕）
           </button>
@@ -1113,6 +1162,10 @@ const dbgCamSkip = () => setDbg((d) => ({ ...d, cam: "pass" }));
             {phase === "speaking" ? "面试官说话中…" : "请稍候…"}
           </button>
         )}
+        <button onClick={toggleTextMode} style={{ padding: "16px 20px", fontSize: 16, border: `1px solid ${LINE}`, background: "transparent", color: "#cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          {textMode ? <StopIcon size={16} /> : null}
+          {textMode ? "退出文字模式" : "文字作答"}
+        </button>
         <button onClick={endInterview} style={{ padding: "16px 20px", fontSize: 16, border: "none", background: "transparent", color: MUTED, cursor: "pointer" }}>
           结束面试
         </button>

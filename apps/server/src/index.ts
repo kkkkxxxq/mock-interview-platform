@@ -20,7 +20,7 @@ app.use("*", logger());
 app.use(
   "*",
   cors({
-    origin: [env.PUBLIC_URL, "http://localhost:5173"],
+    origin: true,
     credentials: true
   })
 );
